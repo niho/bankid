@@ -1,10 +1,13 @@
 {application, bankid,
- [{description, "An OTP library"},
+ [{description, "BankID Relaying Party v5.1"},
   {vsn, "0.1.0"},
   {registered, []},
   {applications,
    [kernel,
-    stdlib
+    stdlib,
+    inets,
+    ssl,
+    jsx
    ]},
   {env,[]},
   {modules, []},
