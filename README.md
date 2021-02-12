@@ -3,6 +3,8 @@ BankID
 
 Swedish BankID Relaying Party v5.1 implementation in Erlang.
 
+![EUnit](https://github.com/niho/bankid/workflows/EUnit/badge.svg)
+
 Documentation
 -------------
 
