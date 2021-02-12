@@ -8,7 +8,7 @@ Swedish BankID Relaying Party v5.1 implementation in Erlang.
 Documentation
 -------------
 
-See the generated edoc [documentation](https://niho.github.io/bankid/) for usage.
+See the generated edoc [documentation](https://niho.github.io/bankid/doc/) for usage.
 
 Tests
 -----
