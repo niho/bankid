@@ -17,7 +17,7 @@ all() ->
     [{group, bankid_rp}].
 
 groups() ->
-    [{bankid_rp, [sequence], [auth_test, sign_test]}].
+    [{bankid_rp, [sequence], [auth_test, sign_test, sign_markdown_test, cancel_test]}].
 
 init_per_suite(Config) ->
     DataDir = ?config(data_dir, Config),
@@ -48,10 +48,24 @@ sign_test(Config) ->
     {ok,_CompletionData} = collect(OrderRef, Options),
     ok.
 
+sign_markdown_test(Config) ->
+    Options = ?config(bankid_options, Config),
+    PersonalNumber = ?config(bankid_pnr, Config),
+    {ok,OrderRef} = bankid:sign({0,0,0,0}, PersonalNumber, {markdown, <<"# Test\n\nHello **world**.">>}, <<"TestData">>, Options),
+    {ok,_CompletionData} = collect(OrderRef, Options),
+    ok.
+
+cancel_test(Config) ->
+    Options = ?config(bankid_options, Config),
+    PersonalNumber = ?config(bankid_pnr, Config),
+    {ok,OrderRef} = bankid:auth({0,0,0,0}, PersonalNumber, Options),
+    ok = bankid:cancel(proplists:get_value(orderRef, OrderRef), Options),
+    ok.
+
 collect(OrderRef, Options) ->
     case bankid:collect(proplists:get_value(orderRef, OrderRef), Options) of
         {ok, {complete, CompletionData}} -> {ok, CompletionData};
         {ok, {pending, _}} -> collect(OrderRef, Options);
-        {ok, {failed, _Failure}} -> error
+        {ok, {failed, Failure}} -> {error, Failure}
     end.
 
