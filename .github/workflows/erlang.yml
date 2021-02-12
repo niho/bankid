@@ -1,14 +1,13 @@
-name: EUnit
+name: Erlang CI
 
 on:
-  pull_request:
-    branches:
-      - 'main'
   push:
-    branches:
-      - 'main'
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
 
 jobs:
+
   build:
     name: Test on OTP ${{ matrix.otp_version }} and ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -23,9 +22,7 @@ jobs:
     - uses: gleam-lang/setup-erlang@v1.0.0
       with:
         otp-version: ${{ matrix.otp_version }}
-
-    - name: compile
+    - name: Compile
       run: rebar3 compile
-
-    - name: test
-      run: rebar3 eunit
+    - name: Run tests
+      run: rebar3 do eunit
