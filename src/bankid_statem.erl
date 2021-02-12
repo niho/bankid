@@ -5,6 +5,16 @@
 % A simple state machine that implements the BankID flow. Do not use
 % this in a production system. This module is only useful for very
 % simple cases like testing and development.
+%
+% ```
+% {ok,Pid} = bankid_statem:start_link({self(), ClientOpts}).
+% {ok,_Order} = bankid_statem:auth(Pid, IpAddr, PersonalNumber, [{}]).
+% receive
+%   {bankid, {complete, _CompletionData}} -> ok;
+%   {bankid, {failed, _Failure}} -> error
+% end.
+% '''
+%
 -module(bankid_statem).
 
 -behaviour(gen_statem).
@@ -23,6 +33,8 @@
 
 -define(TIMEOUT, 1000). % milliseconds
 
+-record(data, {pid, options}).
+
 %% ==================================================================
 %% gen_statem
 %% ==================================================================
@@ -33,8 +45,8 @@ start(Args) ->
 start_link(Args) ->
     gen_statem:start_link(?MODULE, Args, []).
 
-init(ClientOpt) ->
-    {ok, pending, ClientOpt}.
+init({Pid,ClientOpt}) ->
+    {ok, pending, #data{pid=Pid, options=ClientOpt}}.
 
 callback_mode() ->
     [handle_event_function, state_enter].
@@ -53,31 +65,34 @@ terminate(_Reason, _State, _Data) ->
 
 % state callbacks
 
-handle_event({call,From}, {auth, {EndUserIp, PersonalNumber, Requirement}}, pending, Options) ->
+handle_event({call,From}, {auth, {EndUserIp, PersonalNumber, Requirement}}, pending, Data=#data{options=Options}) ->
     {ok, Order} = bankid:auth(EndUserIp, PersonalNumber, Requirement, Options),
-    {next_state, pending, Options, [{reply, From, {ok,Order}},
-                                  {{timeout,collect}, ?TIMEOUT, Order}
-                                 ]};
-handle_event({call,From}, {sign, {EndUserIp, PersonalNumber, UserVisibleData, UserNonVisibleData, Requirement}}, pending, Options) ->
+    {next_state, pending, Data, [{reply, From, {ok,Order}},
+                                 {{timeout,collect}, ?TIMEOUT, Order}
+                                ]};
+handle_event({call,From}, {sign, {EndUserIp, PersonalNumber, UserVisibleData, UserNonVisibleData, Requirement}}, pending, Data=#data{options=Options}) ->
     {ok, Order} = bankid:sign(EndUserIp, PersonalNumber, UserVisibleData, UserNonVisibleData, Requirement, Options),
-    {next_state, pending, Options, [{reply, From, {ok,Order}},
-                                  {{timeout,collect}, ?TIMEOUT, Order}
-                                 ]};
-handle_event({call,From}, cancel, {pending,Order}, Options) ->
+    {next_state, pending, Data, [{reply, From, {ok,Order}},
+                                 {{timeout,collect}, ?TIMEOUT, Order}
+                                ]};
+handle_event({call,From}, cancel, {pending,Order}, Data=#data{options=Options}) ->
     ok = bankid:cancel(proplists:get_value(orderRef, Order), Options),
-    {next_state, canceled, Options, [{{timeout,collect}, infinity, Order},
-                                     {reply, From, ok}]};
-handle_event({timeout,collect}, Order, _State, Options) ->
-    {next_state, {pending,Order}, Options, [{next_event, internal, collect}]};
-handle_event(internal, collect, {pending,Order}, Options) ->
+    {next_state, canceled, Data, [{{timeout,collect}, infinity, Order},
+                                  {reply, From, ok}
+                                 ]};
+handle_event({timeout,collect}, Order, _State, Data) ->
+    {next_state, {pending,Order}, Data, [{next_event, internal, collect}]};
+handle_event(internal, collect, {pending,Order}, Data=#data{options=Options}) ->
     case bankid:collect(proplists:get_value(orderRef, Order), Options) of
-        {ok, {complete, CompletionData}} -> {next_state, {complete, CompletionData}, Options};
-        {ok, {pending, _}} -> {next_state, {pending,Order}, Options, [{{timeout,collect}, ?TIMEOUT, Order}]};
-        {ok, {failed, Failure}} -> {next_state, {failed, Failure}, Options}
+        {ok, {complete, CompletionData}} -> {next_state, {complete, CompletionData}, Data};
+        {ok, {pending, _}} -> {next_state, {pending,Order}, Data, [{{timeout,collect}, ?TIMEOUT, Order}]};
+        {ok, {failed, Failure}} -> {next_state, {failed, Failure}, Data}
     end;
-handle_event(enter, _OldState, {complete,CompletionData}, _Options) ->
+handle_event(enter, _OldState, {complete,CompletionData}, #data{pid=Pid}) ->
+    Pid ! {bankid, {complete, CompletionData}},
     {stop, normal, {complete, CompletionData}};
-handle_event(enter, _OldState, {failed,Failure}, _Options) ->
+handle_event(enter, _OldState, {failed,Failure}, #data{pid=Pid}) ->
+    Pid ! {bankid, {failed, Failure}},
     {stop, normal, {failed,Failure}};
 handle_event(_,_,State,Options) ->
     {next_state,State,Options}.

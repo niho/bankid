@@ -18,9 +18,17 @@
 
 <h2><a name="description">Description</a></h2><p>BankID State Machine.</p>
 
- A simple state machine that implements the BankID flow. Do not use
- this in a production system. This module is only useful for very
- simple cases like testing and development.
+ <p>A simple state machine that implements the BankID flow. Do not use 
+this in a production system. This module is only useful for very 
+simple cases like testing and development.</p>
+
+ <pre> {ok,Pid} = bankid_statem:start_link({self(), ClientOpts}).
+ {ok,_Order} = bankid_statem:auth(Pid, IpAddr, PersonalNumber, [{}]).
+ receive
+   {bankid, {complete, _CompletionData}} -&gt; ok;
+   {bankid, {failed, _Failure}} -&gt; error
+ end.</pre>
+
 <h2><a name="index">Function Index</a></h2>
 <table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#auth-4">auth/4</a></td><td></td></tr>
 <tr><td valign="top"><a href="#callback_mode-0">callback_mode/0</a></td><td></td></tr>
@@ -62,13 +70,13 @@
 
 <h3 class="function"><a name="handle_event-4">handle_event/4</a></h3>
 <div class="spec">
-<p><tt>handle_event(X1, Order, State, Options) -&gt; any()</tt></p>
+<p><tt>handle_event(X1, Order, State, Data) -&gt; any()</tt></p>
 <p> </p>
 </div>
 
 <h3 class="function"><a name="init-1">init/1</a></h3>
 <div class="spec">
-<p><tt>init(ClientOpt) -&gt; any()</tt></p>
+<p><tt>init(X1) -&gt; any()</tt></p>
 <p> </p>
 </div>
 
