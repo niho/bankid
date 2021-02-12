@@ -1,0 +1,377 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Module bankid</title>
+<link rel="stylesheet" type="text/css" href="stylesheet.css" title="EDoc">
+</head>
+<body bgcolor="white">
+<div class="navbar"><a name="#navbar_top"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
+<hr>
+
+<h1>Module bankid</h1>
+<ul class="index"><li><a href="#description">Description</a></li><li><a href="#types">Data Types</a></li><li><a href="#index">Function Index</a></li><li><a href="#functions">Function Details</a></li></ul>BankID Relaying Party v5.1 API.
+<p>Copyright © 2021 Niklas Holmgren</p>
+
+<p><b>Authors:</b> Niklas Holmgren (<a href="mailto:niklas.holmgren@gmail.com"><tt>niklas.holmgren@gmail.com</tt></a>).</p>
+
+<h2><a name="description">Description</a></h2><p>BankID Relaying Party v5.1 API.</p>
+
+ <p>This module implements a client for the BankID Relaying Party API. 
+The Relaying Party (RP) is the server side proxy between the BankID service and 
+the end user client (typically the BankID mobile app). The client in this module 
+is stateless and works by creating an auth or sign order. The order status can then 
+be collected on a regular interval (typically every 1-2 seconds) until it either 
+completes or fails. See the official BankID documentation for a more in-depth 
+description of how the flow works.</p>
+
+ <h3><a name="Client_options">Client options</a></h3><p> 
+To use the client with the production environment you need to specify the location 
+of your SSL certificate and private key (in PEM format) as obtained from your bank. 
+Certificates For the test environment is included with the library and does not 
+need to be specified in the client options.</p>
+
+ <pre> auth(IpAddress, [
+   {environment, production},
+   {certfile, "./priv/BankIDFP_prod.crt.pem"},
+   {keyfile, "./priv/BankIDFP_prod.key.pem"},
+   {password, "qwerty123"}
+ ]).</pre>
+
+ <h3><a name="PEM_files">PEM files</a></h3>
+
+ <p>You can use OpenSSL to convert the SSL certificate you obtain from your bank to 
+the PEM format required by this library.</p>
+
+ <p>Make sure you encrypt and password protect the generated PEM files by specifying 
+the -aes256 parameter (encrypt with AES256).</p>
+
+ <h3><a name="End_user_IP_address">End user IP address</a></h3>
+
+ Calls to auth and sign require you to specify the IP address of the end user.
+ Note the importance of using the correct IP address. It must be the IP
+ address representing the user agent (the end user device) as seen by the RP.
+ If there is a proxy for inbound traffic, special considerations may need to
+ be taken to get the correct address. In some use cases the IP address is not
+ available, for instance for voice based services. In this case, the internal
+ representation of those systems IP address is ok to use.
+
+<h2><a name="types">Data Types</a></h2>
+
+<h3 class="typedecl"><a name="type-auth_response">auth_response()</a></h3>
+<p><tt>auth_response() = <a href="#type-order">order()</a></tt></p>
+
+
+<h3 class="typedecl"><a name="type-auto_start_token">auto_start_token()</a></h3>
+<p><tt>auto_start_token() = binary()</tt></p>
+
+
+<h3 class="typedecl"><a name="type-cert">cert()</a></h3>
+<p><tt>cert() = [{notBefore, <a href="#type-unix_ms_string">unix_ms_string()</a>} | {notAfter, <a href="#type-unix_ms_string">unix_ms_string()</a>}]</tt></p>
+
+
+<h3 class="typedecl"><a name="type-client_error">client_error()</a></h3>
+<p><tt>client_error() = {alreadyInProgress, <a href="#type-error_details">error_details()</a>} | {invalidParameters, <a href="#type-error_details">error_details()</a>} | {error, binary(), <a href="#type-error_details">error_details()</a>}</tt></p>
+
+
+<h3 class="typedecl"><a name="type-collect_response">collect_response()</a></h3>
+<p><tt>collect_response() = {complete, <a href="#type-completion_data">completion_data()</a>} | {pending, <a href="#type-pending_hint_code">pending_hint_code()</a>} | {failed, <a href="#type-failed_hint_code">failed_hint_code()</a>}</tt></p>
+
+
+<h3 class="typedecl"><a name="type-completion_data">completion_data()</a></h3>
+<p><tt>completion_data() = [{user, <a href="#type-user">user()</a>} | {device, <a href="#type-device">device()</a>} | {cert, <a href="#type-cert">cert()</a>} | {signature, <a href="#type-signature">signature()</a>} | {ocspResponse, <a href="#type-ocsp_response">ocsp_response()</a>}]</tt></p>
+
+
+<h3 class="typedecl"><a name="type-device">device()</a></h3>
+<p><tt>device() = [{ipAddress, <a href="#type-ip_address">ip_address()</a>}]</tt></p>
+
+
+<h3 class="typedecl"><a name="type-end_user_ip">end_user_ip()</a></h3>
+<p><tt>end_user_ip() = <a href="inet.html#type-ip_address">inet:ip_address()</a></tt></p>
+
+
+<h3 class="typedecl"><a name="type-endpoint_url">endpoint_url()</a></h3>
+<p><tt>endpoint_url() = <a href="httpc.html#type-url">httpc:url()</a></tt></p>
+
+
+<h3 class="typedecl"><a name="type-environment">environment()</a></h3>
+<p><tt>environment() = production | test</tt></p>
+
+
+<h3 class="typedecl"><a name="type-error_details">error_details()</a></h3>
+<p><tt>error_details() = binary()</tt></p>
+
+
+<h3 class="typedecl"><a name="type-failed_hint_code">failed_hint_code()</a></h3>
+<p><tt>failed_hint_code() = expiredTransaction | certificateErr | userCancel | cancelled | startFailed | binary()</tt></p>
+
+
+<h3 class="typedecl"><a name="type-givenName">givenName()</a></h3>
+<p><tt>givenName() = binary()</tt></p>
+
+
+<h3 class="typedecl"><a name="type-ip_address">ip_address()</a></h3>
+<p><tt>ip_address() = binary()</tt></p>
+
+
+<h3 class="typedecl"><a name="type-name">name()</a></h3>
+<p><tt>name() = binary()</tt></p>
+
+
+<h3 class="typedecl"><a name="type-ocsp_response">ocsp_response()</a></h3>
+<p><tt>ocsp_response() = binary()</tt></p>
+
+
+<h3 class="typedecl"><a name="type-option">option()</a></h3>
+<p><tt>option() = {environment, <a href="#type-environment">environment()</a>} | {endpoint, <a href="#type-endpoint_url">endpoint_url()</a>} | {cacertfile, <a href="ssl.html#type-client_cafile">ssl:client_cafile()</a>} | {certfile, <a href="ssl.html#type-cert_pem">ssl:cert_pem()</a>} | {keyfile, <a href="ssl.html#type-key_pem">ssl:key_pem()</a>} | {password, <a href="ssl.html#type-key_password">ssl:key_password()</a>} | {max_retries, integer()} | {timeout, integer()}</tt></p>
+
+
+<h3 class="typedecl"><a name="type-options">options()</a></h3>
+<p><tt>options() = [<a href="#type-option">option()</a>]</tt></p>
+
+
+<h3 class="typedecl"><a name="type-order">order()</a></h3>
+<p><tt>order() = [{orderRef, <a href="#type-order_ref">order_ref()</a>} | {autoStartToken, <a href="#type-auto_start_token">auto_start_token()</a>} | {qrStartToken, <a href="#type-qr_start_token">qr_start_token()</a>} | {qrStartSecret, <a href="#type-qr_start_secret">qr_start_secret()</a>}]</tt></p>
+
+
+<h3 class="typedecl"><a name="type-order_ref">order_ref()</a></h3>
+<p><tt>order_ref() = binary()</tt></p>
+
+
+<h3 class="typedecl"><a name="type-pending_hint_code">pending_hint_code()</a></h3>
+<p><tt>pending_hint_code() = outstandingTransaction | noClient | started | userSign | binary()</tt></p>
+
+
+<h3 class="typedecl"><a name="type-personal_number">personal_number()</a></h3>
+<p><tt>personal_number() = binary()</tt></p>
+
+
+<h3 class="typedecl"><a name="type-qr_start_secret">qr_start_secret()</a></h3>
+<p><tt>qr_start_secret() = binary()</tt></p>
+
+
+<h3 class="typedecl"><a name="type-qr_start_token">qr_start_token()</a></h3>
+<p><tt>qr_start_token() = binary()</tt></p>
+
+
+<h3 class="typedecl"><a name="type-request_error">request_error()</a></h3>
+<p><tt>request_error() = <a href="#type-client_error">client_error()</a> | internal | timeout | maintenance</tt></p>
+
+
+<h3 class="typedecl"><a name="type-requirement">requirement()</a></h3>
+<p><tt>requirement() = [<a href="#type-requirements">requirements()</a>]</tt></p>
+
+
+<h3 class="typedecl"><a name="type-requirements">requirements()</a></h3>
+<p><tt>requirements() = {cardReader, class1 | class2} | {certificatePolicies, binary()} | {issuerCn, binary()} | {autoStartTokenRequired, boolean()} | {allowFingerprint, boolean()} | {tokenStartRequired, boolean()}</tt></p>
+
+
+<h3 class="typedecl"><a name="type-sign_response">sign_response()</a></h3>
+<p><tt>sign_response() = <a href="#type-order">order()</a></tt></p>
+
+
+<h3 class="typedecl"><a name="type-signature">signature()</a></h3>
+<p><tt>signature() = binary()</tt></p>
+
+
+<h3 class="typedecl"><a name="type-surname">surname()</a></h3>
+<p><tt>surname() = binary()</tt></p>
+
+
+<h3 class="typedecl"><a name="type-unix_ms_string">unix_ms_string()</a></h3>
+<p><tt>unix_ms_string() = binary()</tt></p>
+
+
+<h3 class="typedecl"><a name="type-user">user()</a></h3>
+<p><tt>user() = [{personalNumber, <a href="#type-personal_number">personal_number()</a>} | {name, <a href="#type-name">name()</a>} | {givenName, <a href="#type-givenName">givenName()</a>} | {surname, <a href="#type-surname">surname()</a>}]</tt></p>
+
+
+<h3 class="typedecl"><a name="type-user_non_visible_data">user_non_visible_data()</a></h3>
+<p><tt>user_non_visible_data() = binary()</tt></p>
+
+
+<h3 class="typedecl"><a name="type-user_visible_data">user_visible_data()</a></h3>
+<p><tt>user_visible_data() = binary() | {markdown, binary()}</tt></p>
+
+
+<h2><a name="index">Function Index</a></h2>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#auth-2">auth/2</a></td><td>Initiate an authentication order.</td></tr>
+<tr><td valign="top"><a href="#auth-3">auth/3</a></td><td>Initiate an authentication order with a personal number.</td></tr>
+<tr><td valign="top"><a href="#auth-4">auth/4</a></td><td>Initiate an authentication order with a personal number and requirements.</td></tr>
+<tr><td valign="top"><a href="#cancel-2">cancel/2</a></td><td>Cancels an ongoing sign or auth order.</td></tr>
+<tr><td valign="top"><a href="#collect-2">collect/2</a></td><td>Collects the result of a sign or auth order using the orderRef as reference.</td></tr>
+<tr><td valign="top"><a href="#sign-4">sign/4</a></td><td>Initiates a signing order with a personal number.</td></tr>
+<tr><td valign="top"><a href="#sign-5">sign/5</a></td><td>Initiates a signing order with a personal number.</td></tr>
+<tr><td valign="top"><a href="#sign-6">sign/6</a></td><td>Initiates a signing order with a personal number and requirements.</td></tr>
+</table>
+
+<h2><a name="functions">Function Details</a></h2>
+
+<h3 class="function"><a name="auth-2">auth/2</a></h3>
+<div class="spec">
+<p><tt>auth(EndUserIp::<a href="#type-end_user_ip">end_user_ip()</a>, Options::<a href="#type-options">options()</a>) -&gt; {ok, <a href="#type-auth_response">auth_response()</a>} | {error, <a href="#type-request_error">request_error()</a>}</tt><br></p>
+<p><tt>EndUserIp</tt>: The user IP address as seen by RP. IPv4 and IPv6 is allowed.<br>
+<tt>Options</tt>: Client options.
+<br>
+</p>
+</div><p>Equivalent to <a href="#auth-4"><tt>auth(EndUserIp, null, [{}], Options)</tt></a>.</p>
+<p><p>Initiate an authentication order.</p>
+
+ <p>When the personal number is excluded, the client must be started 
+with the autoStartToken returned in the response.</p>
+
+ Use the collect method to query the status of the order. If the request is
+ successful the response includes orderRef, autoStartToken, qrStartToken
+ and qrStartSecret.
+</p>
+<p><b>See also:</b> <a href="#auth-3">auth/3</a>, <a href="#auth-4">auth/4</a>.</p>
+
+<h3 class="function"><a name="auth-3">auth/3</a></h3>
+<div class="spec">
+<p><tt>auth(EndUserIp::<a href="#type-end_user_ip">end_user_ip()</a>, PersonalNumber::<a href="#type-personal_number">personal_number()</a>, Options::<a href="#type-options">options()</a>) -&gt; {ok, <a href="#type-auth_response">auth_response()</a>} | {error, <a href="#type-request_error">request_error()</a>}</tt><br></p>
+<p><tt>EndUserIp</tt>: The user IP address as seen by RP. IPv4 and IPv6 is allowed.<br>
+<tt>PersonalNumber</tt>: The personal number of the user. 12 digits. Century
+ must be included.<br>
+<tt>Options</tt>: Client options.
+<br>
+</p>
+</div><p>Equivalent to <a href="#auth-4"><tt>auth(EndUserIp, PersonalNumber, [{}], Options)</tt></a>.</p>
+<p><p>Initiate an authentication order with a personal number.</p>
+
+ Use the collect method to query the status of the order. If the request is
+ successful the response includes orderRef, autoStartToken, qrStartToken
+ and qrStartSecret.
+</p>
+<p><b>See also:</b> <a href="#auth-2">auth/2</a>, <a href="#auth-4">auth/4</a>.</p>
+
+<h3 class="function"><a name="auth-4">auth/4</a></h3>
+<div class="spec">
+<p><tt>auth(EndUserIp::<a href="#type-end_user_ip">end_user_ip()</a>, PersonalNumber::<a href="#type-personal_number">personal_number()</a>, Requirement::<a href="#type-requirement">requirement()</a>, Options::<a href="#type-options">options()</a>) -&gt; {ok, <a href="#type-auth_response">auth_response()</a>} | {error, <a href="#type-request_error">request_error()</a>}</tt><br></p>
+<p><tt>EndUserIp</tt>: The user IP address as seen by RP. IPv4 and IPv6 is allowed.<br>
+<tt>PersonalNumber</tt>: The personal number of the user. 12 digits. Century
+ must be included.<br>
+<tt>Requirement</tt>: Requirements on how the auth order must be performed.<br>
+<tt>Options</tt>: Client options.
+<br>
+</p>
+</div><p><p>Initiate an authentication order with a personal number and requirements.</p>
+
+ <p>Use the collect method to query the status of the order. If the request is 
+successful the response includes orderRef, autoStartToken, qrStartToken 
+and qrStartSecret.</p>
+
+ RP may use the requirement parameter to describe how the signature must be
+ created and verified. A typical use case is to require Mobile BankID or a
+ special card reader.
+</p>
+<p><b>See also:</b> <a href="#auth-2">auth/2</a>, <a href="#auth-3">auth/3</a>.</p>
+
+<h3 class="function"><a name="cancel-2">cancel/2</a></h3>
+<div class="spec">
+<p><tt>cancel(OrderRef::<a href="#type-order_ref">order_ref()</a>, Options::<a href="#type-options">options()</a>) -&gt; ok | {error, <a href="#type-request_error">request_error()</a>}</tt><br></p>
+<p><tt>OrderRef</tt>: The orderRef returned from auth or sign.<br>
+<tt>Options</tt>: Client options.
+<br>
+</p>
+</div><p><p>Cancels an ongoing sign or auth order.</p>
+
+ This is typically used if the user cancels the order in your service or app.
+</p>
+
+<h3 class="function"><a name="collect-2">collect/2</a></h3>
+<div class="spec">
+<p><tt>collect(OrderRef::<a href="#type-order_ref">order_ref()</a>, Options::<a href="#type-options">options()</a>) -&gt; {ok, <a href="#type-collect_response">collect_response()</a>} | {error, <a href="#type-request_error">request_error()</a>}</tt><br></p>
+<p><tt>OrderRef</tt>: The orderRef returned from auth or sign.<br>
+<tt>Options</tt>: Client options.
+<br>
+</p>
+</div><p><p>Collects the result of a sign or auth order using the orderRef as reference.</p>
+
+ <p>RP should keep on calling collect every two seconds as long as status indicates 
+pending. RP must abort if status indicates failed. The user identity is returned 
+when complete.</p>
+
+ The response will have different content depending on status of the order.
+ The status may be pending, failed or complete.
+</p>
+
+<h3 class="function"><a name="sign-4">sign/4</a></h3>
+<div class="spec">
+<p><tt>sign(EndUserIp::<a href="#type-end_user_ip">end_user_ip()</a>, UserVisibleData::<a href="#type-user_visible_data">user_visible_data()</a>, UserNonVisibleData::<a href="#type-user_non_visible_data">user_non_visible_data()</a>, Options::<a href="#type-options">options()</a>) -&gt; {ok, <a href="#type-sign_response">sign_response()</a>} | {error, <a href="#type-request_error">request_error()</a>}</tt><br></p>
+<p><tt>EndUserIp</tt>: The user IP address as seen by RP. IPv4 and IPv6 is allowed.<br>
+<tt>UserVisibleData</tt>: The text to be displayed and signed.<br>
+<tt>UserNonVisibleData</tt>: Data not displayed to the user.<br>
+<tt>Options</tt>: Client options.
+<br>
+</p>
+</div><p>Equivalent to <a href="#sign-6"><tt>sign(EndUserIp,
+     null,
+     UserVisibleData,
+     UserNonVisibleData,
+     [{}],
+     Options)</tt></a>.</p>
+<p><p>Initiates a signing order with a personal number.</p>
+
+ <p>When the personal number is excluded, the client must be started 
+with the autoStartToken returned in the response.</p>
+
+ Use the collect method to query the status of the order. If the request is
+ successful the response includes orderRef, autoStartToken, qrStartToken
+ and qrStartSecret.
+</p>
+<p><b>See also:</b> <a href="#sign-5">sign/5</a>, <a href="#sign-6">sign/6</a>.</p>
+
+<h3 class="function"><a name="sign-5">sign/5</a></h3>
+<div class="spec">
+<p><tt>sign(EndUserIp::<a href="#type-end_user_ip">end_user_ip()</a>, PersonalNumber::<a href="#type-personal_number">personal_number()</a>, UserVisibleData::<a href="#type-user_visible_data">user_visible_data()</a>, UserNonVisibleData::<a href="#type-user_non_visible_data">user_non_visible_data()</a>, Options::<a href="#type-options">options()</a>) -&gt; {ok, <a href="#type-sign_response">sign_response()</a>} | {error, <a href="#type-request_error">request_error()</a>}</tt><br></p>
+<p><tt>EndUserIp</tt>: The user IP address as seen by RP. IPv4 and IPv6 is allowed.<br>
+<tt>PersonalNumber</tt>: The personal number of the user. 12 digits. Century
+ must be included.<br>
+<tt>UserVisibleData</tt>: The text to be displayed and signed.<br>
+<tt>UserNonVisibleData</tt>: Data not displayed to the user.<br>
+<tt>Options</tt>: Client options.
+<br>
+</p>
+</div><p>Equivalent to <a href="#sign-6"><tt>sign(EndUserIp,
+     PersonalNumber,
+     UserVisibleData,
+     UserNonVisibleData,
+     [{}],
+     Options)</tt></a>.</p>
+<p><p>Initiates a signing order with a personal number.</p>
+
+ Use the collect method to query the status of the order. If the request is
+ successful the response includes orderRef, autoStartToken, qrStartToken
+ and qrStartSecret.
+</p>
+<p><b>See also:</b> <a href="#sign-4">sign/4</a>, <a href="#sign-6">sign/6</a>.</p>
+
+<h3 class="function"><a name="sign-6">sign/6</a></h3>
+<div class="spec">
+<p><tt>sign(EndUserIp::<a href="#type-end_user_ip">end_user_ip()</a>, PersonalNumber::<a href="#type-personal_number">personal_number()</a>, UserVisibleData::<a href="#type-user_visible_data">user_visible_data()</a>, UserNonVisibleData::<a href="#type-user_non_visible_data">user_non_visible_data()</a>, Requirement::<a href="#type-requirement">requirement()</a>, Options::<a href="#type-options">options()</a>) -&gt; {ok, <a href="#type-sign_response">sign_response()</a>} | {error, <a href="#type-request_error">request_error()</a>}</tt><br></p>
+<p><tt>EndUserIp</tt>: The user IP address as seen by RP. IPv4 and IPv6 is allowed.<br>
+<tt>PersonalNumber</tt>: The personal number of the user. 12 digits. Century
+ must be included.<br>
+<tt>UserVisibleData</tt>: The text to be displayed and signed.<br>
+<tt>UserNonVisibleData</tt>: Data not displayed to the user.<br>
+<tt>Requirement</tt>: Requirements on how the sign order must be performed.<br>
+<tt>Options</tt>: Client options.
+<br>
+</p>
+</div><p><p>Initiates a signing order with a personal number and requirements.</p>
+
+ <p>Use the collect method to query the status of the order. If the request is 
+successful the response includes orderRef, autoStartToken, qrStartToken 
+and qrStartSecret.</p>
+
+ RP may use the requirement parameter to describe how the signature must be
+ created and verified. A typical use case is to require Mobile BankID or a
+ special card reader.
+</p>
+<p><b>See also:</b> <a href="#sign-4">sign/4</a>, <a href="#sign-5">sign/5</a>.</p>
+<hr>
+
+<div class="navbar"><a name="#navbar_bottom"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
+<p><i>Generated by EDoc</i></p>
+</body>
+</html>

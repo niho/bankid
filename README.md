@@ -3,6 +3,19 @@ BankID
 
 Swedish BankID Relaying Party v5.1 implementation in Erlang.
 
+Documentation
+-------------
+
+See the generated edoc [documentation](https://niho.github.io/bankid/) for usage.
+
+Tests
+-----
+
+There is a common test suite included that you can run against the BankID test
+environment. The test suite requires user interaction and that you have a BankID
+for test installed in your BankID client. See [How to get a test BankID](https://www.bankid.com/assets/bankid/rp/how-to-get-bankid-for-test-v1.7.pdf)
+for more information.
+
 Copyright and License
 ---------------------
 

@@ -21,26 +21,30 @@ groups() ->
 
 init_per_suite(Config) ->
     DataDir = ?config(data_dir, Config),
-    Options = [{endpoint, bankid:endpoint(test)},
-               {cacertfile, string:concat(DataDir, ?SSL_CACERTFILE)},
-               {certfile, string:concat(DataDir, ?SSL_CERTFILE)},
-               {keyfile, string:concat(DataDir, ?SSL_KEYFILE)},
+    Options = [{environment, test},
+               {cacertfile, filename:join(DataDir, ?SSL_CACERTFILE)},
+               {certfile, filename:join(DataDir, ?SSL_CERTFILE)},
+               {keyfile, filename:join(DataDir, ?SSL_KEYFILE)},
                {password, ?SSL_PASSWORD}
               ],
-    [{bankid_options,Options} | Config].
+    [{bankid_options,Options},
+     {bankid_pnr, list_to_binary(os:getenv("BANKID_PNR", "1212121212"))}
+    ] ++ Config.
 
 end_per_suite(Config) ->
     Config.
 
 auth_test(Config) ->
     Options = ?config(bankid_options, Config),
-    {ok,OrderRef} = bankid:auth({0,0,0,0}, <<"1212121212">>, Options),
+    PersonalNumber = ?config(bankid_pnr, Config),
+    {ok,OrderRef} = bankid:auth({0,0,0,0}, PersonalNumber, Options),
     {ok,_CompletionData} = collect(OrderRef, Options),
     ok.
 
 sign_test(Config) ->
     Options = ?config(bankid_options, Config),
-    {ok,OrderRef} = bankid:sign({0,0,0,0}, <<"1212121212">>, <<"Test">>, <<"TestData">>, Options),
+    PersonalNumber = ?config(bankid_pnr, Config),
+    {ok,OrderRef} = bankid:sign({0,0,0,0}, PersonalNumber, <<"Test">>, <<"TestData">>, Options),
     {ok,_CompletionData} = collect(OrderRef, Options),
     ok.
 

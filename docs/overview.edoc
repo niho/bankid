@@ -1,0 +1,16 @@
+@title Swedish BankID Relaying Party v5.1
+
+@author Niklas Holmgren <niklas.holmgren@gmail.com>
+@copyright 2021 Niklas Holmgren
+@version 0.1.0
+
+@reference See the document <a href="bankid-relying-party-guidelines-v3.5.pdf">BankID Relying Party Guidelines v3.5</a> for more technical details.
+@reference See the <a href="https://www.bankid.com/utvecklare/rp-info">BankID Developer site</a> for more general information.
+
+@doc This is a client implementation for the Swedish BankID Relaying Party API (v5.1).
+The client can be used and tested with the official BankID test environment. To use
+it with the production environment you will need to sign an agreement with a Swedish
+bank and request SSL certificates that will give access to the production environment.
+
+For a list of banks that offer BankID as a service, please see the official guides <a href="https://www.bankid.com/foretag/anslut-ftg">for companies</a> and <a href="https://www.bankid.com/foretag/offentlig-sektor">public sector</a>.
+
