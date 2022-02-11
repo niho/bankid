@@ -17,7 +17,9 @@ all() ->
     [{group, bankid_rp}].
 
 groups() ->
-    [{bankid_rp, [sequence], [auth_test, sign_test, sign_markdown_test, cancel_test]}].
+    [{bankid_rp, [sequence],
+      [auth_test, auth_markdown_test, sign_test,
+       sign_markdown_test, cancel_test]}].
 
 init_per_suite(Config) ->
     DataDir = ?config(data_dir, Config),
@@ -38,6 +40,13 @@ auth_test(Config) ->
     Options = ?config(bankid_options, Config),
     PersonalNumber = ?config(bankid_pnr, Config),
     {ok,OrderRef} = bankid:auth({0,0,0,0}, PersonalNumber, Options),
+    {ok,_CompletionData} = collect(OrderRef, Options),
+    ok.
+
+auth_markdown_test(Config) ->
+    Options = ?config(bankid_options, Config),
+    PersonalNumber = ?config(bankid_pnr, Config),
+    {ok,OrderRef} = bankid:auth({0,0,0,0}, PersonalNumber, {markdown, <<"# Test\n\nHello **world**.">>}, <<"TestData">>, Options),
     {ok,_CompletionData} = collect(OrderRef, Options),
     ok.
 

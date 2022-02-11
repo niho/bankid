@@ -48,6 +48,8 @@
 -export([auth/2,
          auth/3,
          auth/4,
+         auth/5,
+         auth/6,
          sign/4,
          sign/5,
          sign/6,
@@ -236,6 +238,80 @@ auth(EndUserIp, PersonalNumber, Options) ->
 auth(EndUserIp, PersonalNumber, Requirement, Options) ->
     auth({[{endUserIp, normalize_ip(EndUserIp)},
            {personalNumber, normalize_pnr(PersonalNumber)},
+           {requirement, Requirement}
+          ], Options}).
+
+% @doc Initiate an authentication order with a personal number and user data.
+%
+% Use the collect method to query the status of the order. If the request is
+% successful the response includes orderRef, autoStartToken, qrStartToken
+% and qrStartSecret.
+%
+% RP may use the requirement parameter to describe how the signature must be
+% created and verified. A typical use case is to require Mobile BankID or a
+% special card reader.
+%
+% @param EndUserIp The user IP address as seen by RP. IPv4 and IPv6 is allowed.
+% @param PersonalNumber The personal number of the user. 12 digits. Century
+% must be included.
+% @param UserVisibleData The text to be displayed and signed.
+% @param UserNonVisibleData Data not displayed to the user.
+% @param Options Client options.
+%
+% @see auth/2
+% @see auth/3
+%
+-spec auth(end_user_ip(), personal_number(), user_visible_data(), user_non_visible_data(), options()) -> {ok, auth_response()} | {error, request_error()}.
+auth(EndUserIp, PersonalNumber, {markdown, UserVisibleData}, UserNonVisibleData, Options) ->
+    auth({[{endUserIp, normalize_ip(EndUserIp)},
+           {personalNumber, normalize_pnr(PersonalNumber)},
+           {userVisibleData, encode_data(UserVisibleData)},
+           {userNonVisibleData, encode_data(UserNonVisibleData)},
+           {userVisibleDataFormat, <<"simpleMarkdownV1">>}
+          ], Options});
+auth(EndUserIp, PersonalNumber, UserVisibleData, UserNonVisibleData, Options) ->
+    auth({[{endUserIp, normalize_ip(EndUserIp)},
+           {personalNumber, normalize_pnr(PersonalNumber)},
+           {userVisibleData, encode_data(UserVisibleData)},
+           {userNonVisibleData, encode_data(UserNonVisibleData)}
+          ], Options}).
+
+% @doc Initiate an authentication order with a personal number, user data and
+% requirements.
+%
+% Use the collect method to query the status of the order. If the request is
+% successful the response includes orderRef, autoStartToken, qrStartToken
+% and qrStartSecret.
+%
+% RP may use the requirement parameter to describe how the signature must be
+% created and verified. A typical use case is to require Mobile BankID or a
+% special card reader.
+%
+% @param EndUserIp The user IP address as seen by RP. IPv4 and IPv6 is allowed.
+% @param PersonalNumber The personal number of the user. 12 digits. Century
+% must be included.
+% @param UserVisibleData The text to be displayed and signed.
+% @param UserNonVisibleData Data not displayed to the user.
+% @param Requirement Requirements on how the auth order must be performed.
+% @param Options Client options.
+%
+% @see auth/2
+% @see auth/3
+%
+-spec auth(end_user_ip(), personal_number(), user_visible_data(), user_non_visible_data(), requirement(), options()) -> {ok, auth_response()} | {error, request_error()}.
+auth(EndUserIp, PersonalNumber, {markdown, UserVisibleData}, UserNonVisibleData, Requirement, Options) ->
+    auth({[{endUserIp, normalize_ip(EndUserIp)},
+           {personalNumber, normalize_pnr(PersonalNumber)},
+           {userVisibleData, encode_data(UserVisibleData)},
+           {userNonVisibleData, encode_data(UserNonVisibleData)},
+           {userVisibleDataFormat, <<"simpleMarkdownV1">>},
+           {requirement, Requirement}
+          ], Options});
+auth(EndUserIp, PersonalNumber, UserVisibleData, UserNonVisibleData, Requirement, Options) ->
+    auth({[{endUserIp, normalize_ip(EndUserIp)},
+           {personalNumber, normalize_pnr(PersonalNumber)},
+           {userVisibleData, encode_data(UserVisibleData)},
+           {userNonVisibleData, encode_data(UserNonVisibleData)},
            {requirement, Requirement}
           ], Options}).
 
